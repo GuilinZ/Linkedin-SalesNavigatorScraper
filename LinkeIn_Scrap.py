@@ -10,15 +10,14 @@ import argparse
 
 
 def scrap_from_url(driver,url=None):
-    url = 'https://www.linkedin.com/sales/search/people?doFetchHeroCard=false&functionIncluded=12&geoIncluded=103644278&industryIncluded=4&logHistory=true&page=1&rsLogId=967882860&searchSessionId=2KtadMyDTh6HsrXXvjHlIQ%3D%3D&seniorityIncluded=6%2C7%2C8'
+    if url == None:
+        url = 'https://www.linkedin.com/sales/search/people?doFetchHeroCard=false&functionIncluded=12&geoIncluded=103644278&industryIncluded=4&logHistory=true&page=1&rsLogId=967882860&searchSessionId=2KtadMyDTh6HsrXXvjHlIQ%3D%3D&seniorityIncluded=6%2C7%2C8'
     driver.get(url)
 #################################### INSERT URL ####################################
     time.sleep(3)
     links = []
-    tab = []
     number_page = 1
-    number_candidate = 1
-    path = "/Users/romainmeunier/Desktop"
+    number_candidate = 0
     while number_page < 2:
         time.sleep(3)
         height = 0
@@ -40,21 +39,34 @@ def scrap_from_url(driver,url=None):
         print(len(links))
 
     extracted_infos = []
+    hiring_keys = ['hiring','hiring!','Hiring','Hiring!','HIRING','open','Open','position']
+    count=0
     for link in links:
+        count += 1
+        if count > 5:
+            break
         driver.get(link)
         time.sleep(3)
         person_profile = {}
         ## Implement BeautifulSoup for html parser## TODO
         src = driver.page_source
         soup = BeautifulSoup(src, 'html.parser')
-        # name
+
+        # get full name
         full_name = soup.title.text.split('|')[0]
 
-        # position and company name
+        # get position and company name
         pos_and_company = soup.find(class_='profile-topcard__current-positions flex mt3').text.split()
         index_at = pos_and_company.index('at')
         position = ' '.join(pos_and_company[:index_at])
         company = pos_and_company[index_at + 1]
+
+        # get connection size
+        try:
+            connection_size = soup.find(class_='profile-topcard__connections-data type-total inline t-14 t-black--light mr5').text.strip()
+        except:
+            connection_size = ''
+
 
         # company url
         try:
@@ -76,6 +88,7 @@ def scrap_from_url(driver,url=None):
             linkedin_url = Tk().clipboard_get()
         except:
             linkedin_url = ''
+
         # profile description
         try:
             see_more_button = driver.find_element_by_css_selector(
@@ -86,12 +99,26 @@ def scrap_from_url(driver,url=None):
             profile_summary = soup.find(class_='profile-topcard__summary-modal-content').text.strip()
         except:
             profile_summary = ''
+
+
+        # get hiring needs
+        hiring_needs = 'NO'
+        split_profile = profile_summary.split()
+        for word in split_profile:
+            if word in hiring_keys:
+                hiring_needs = 'YES'
+        top_card = soup.find(class_='profile-topcard-content-container mr2').text.strip().split()
+        for word in top_card:
+            if word in hiring_keys:
+                hiring_needs = 'YES'
         ##---------------------------------------##
         number_candidate += 1
         print("{} /".format(number_candidate) + " {}".format(len(links)))
         person_profile['NAME'] = full_name
         person_profile['POSITION'] = position
+        person_profile['CONNECTION SIZE'] = connection_size
         person_profile['COMPANY'] = company
+        person_profile['HIRING NEEDS'] = hiring_needs
         person_profile['LINKEDIN WEBPAGE'] = linkedin_url
         person_profile['COMPANY WEBPAGE'] = company_url
         person_profile['SALE NAVIGATOR URL'] = link
@@ -105,7 +132,7 @@ def scrap_from_url(driver,url=None):
         fc.writerows(extracted_infos)
     # df = pd.DataFrame(np.array(tab))
     # df.to_excel(r'{}/Linkedin_Scrap.xlsx'.format(path), index=False, header=True)
-    done = True
+    print('DONE')
 def scrap_from_keywords(driver,keywords=None):
     filter_page_url = 'https://www.linkedin.com/sales/search/people?page=1&rsLogId=969614316&searchSessionId=1qpyQattToCh2lFvET1Cwg%3D%3D'
     driver.get(filter_page_url)
@@ -117,6 +144,9 @@ def scrap_from_keywords(driver,keywords=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--keywords', default=None)
+    parser.add_argument('--url', default=None)
+    parser.add_argument('--mode', default='url')
+    args = parser.parse_args()
 
     driver = webdriver.Chrome()
     driver.get('https://www.linkedin.com')
@@ -138,8 +168,10 @@ if __name__ == '__main__':
         pass
     time.sleep(1)
 
-    scrap_from_url(driver)
-
+    if args.mode == 'url':
+        scrap_from_url(driver,args.url)
+    else:
+        scrap_from_keywords(driver)
 
 
 
