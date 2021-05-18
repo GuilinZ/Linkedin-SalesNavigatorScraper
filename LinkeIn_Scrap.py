@@ -9,7 +9,7 @@ from tkinter import Tk
 import argparse
 
 
-def scrap_from_url(url=None):
+def scrap_from_url(driver,url=None):
     url = 'https://www.linkedin.com/sales/search/people?doFetchHeroCard=false&functionIncluded=12&geoIncluded=103644278&industryIncluded=4&logHistory=true&page=1&rsLogId=967882860&searchSessionId=2KtadMyDTh6HsrXXvjHlIQ%3D%3D&seniorityIncluded=6%2C7%2C8'
     driver.get(url)
 #################################### INSERT URL ####################################
@@ -106,7 +106,7 @@ def scrap_from_url(url=None):
     # df = pd.DataFrame(np.array(tab))
     # df.to_excel(r'{}/Linkedin_Scrap.xlsx'.format(path), index=False, header=True)
     done = True
-def scrap_from_keywords(keywords=None):
+def scrap_from_keywords(driver,keywords=None):
     filter_page_url = 'https://www.linkedin.com/sales/search/people?page=1&rsLogId=969614316&searchSessionId=1qpyQattToCh2lFvET1Cwg%3D%3D'
     driver.get(filter_page_url)
     pass
@@ -138,6 +138,7 @@ if __name__ == '__main__':
         pass
     time.sleep(1)
 
+    scrap_from_url(driver)
 
 
 
