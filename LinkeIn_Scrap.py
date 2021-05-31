@@ -7,14 +7,17 @@ import os
 import openpyxl
 from tkinter import Tk
 import argparse
+from selenium.webdriver.common.keys import Keys
 
-
-def scrap_from_url(driver,url=None):
+def scrap_from_url(args, driver,url=None, load_page=True):
     if url == None:
         url = 'https://www.linkedin.com/sales/search/people?doFetchHeroCard=false&functionIncluded=12&geoIncluded=103644278&industryIncluded=4&logHistory=true&page=1&rsLogId=967882860&searchSessionId=2KtadMyDTh6HsrXXvjHlIQ%3D%3D&seniorityIncluded=6%2C7%2C8'
-    driver.get(url)
+
+    if load_page:
+        driver.get(url)
+        time.sleep(3)
 #################################### INSERT URL ####################################
-    time.sleep(3)
+
     links = []
     number_page = 1
     number_candidate = 0
@@ -33,20 +36,20 @@ def scrap_from_url(driver,url=None):
                     links.append(link)
 
         number_page += 1
-        next_button = driver.find_element_by_class_name("search-results__pagination-next-button")
-        next_button.click()
-        print(links)
-        print(len(links))
+        # next_button = driver.find_element_by_class_name("search-results__pagination-next-button")
+        # next_button.click()
+        # print(links)
+        # print(len(links))
 
     extracted_infos = []
     hiring_keys = ['hiring','hiring!','Hiring','Hiring!','HIRING','open','Open','position']
     count=0
     for link in links:
         count += 1
-        if count > 5:
+        if count > 1:
             break
         driver.get(link)
-        time.sleep(3)
+        time.sleep(1)
         person_profile = {}
         ## Implement BeautifulSoup for html parser## TODO
         src = driver.page_source
@@ -133,17 +136,44 @@ def scrap_from_url(driver,url=None):
     # df = pd.DataFrame(np.array(tab))
     # df.to_excel(r'{}/Linkedin_Scrap.xlsx'.format(path), index=False, header=True)
     print('DONE')
-def scrap_from_keywords(driver,keywords=None):
-    filter_page_url = 'https://www.linkedin.com/sales/search/people?page=1&rsLogId=969614316&searchSessionId=1qpyQattToCh2lFvET1Cwg%3D%3D'
+    return extracted_infos
+def scrap_from_keywords(args, driver,keywords=None):
+    # filter_page_url = 'https://www.linkedin.com/sales/search/people?page=1&rsLogId=969614316&searchSessionId=1qpyQattToCh2lFvET1Cwg%3D%3D'
+    filter_page_url = 'https://www.linkedin.com/sales/search/people?doFetchHeroCard=false&functionIncluded=12&geoIncluded=103644278&logHistory=true&page=1&rsLogId=994102108&searchSessionId=1qpyQattToCh2lFvET1Cwg%3D%3D&seniorityIncluded=6%2C8%2C7'
+    # print(filter_page_url)
     driver.get(filter_page_url)
-    pass
-#filter page
+    time.sleep(3)
+
+    kwd_input = driver.find_element_by_id('ember44-input')
+    kwd_input.send_keys(keywords)
+    kwd_input.send_keys(Keys.ENTER)
+    time.sleep(1)
+    profiles = scrap_from_url(args, driver, url=driver.current_url, load_page=False)
+    return profiles
+def scrap_from_company_list(args, driver, fpath=''):
+    company_list = read_company_list(fpath)
+    rets = []
+    for company in company_list:
+        profiles = scrap_from_keywords(args, driver,keywords=company)
+        rets.extend(profiles)
+    with open('all_company.csv', 'w', encoding='utf8', newline='') as output_file:
+        fc = csv.DictWriter(output_file, fieldnames=rets[0].keys())
+        fc.writeheader()
+        fc.writerows(rets)
+    return rets
+def read_company_list(fpath):
+    with open(fpath) as f:
+        lines = f.readlines()
+    f.close()
+    lines = [line.strip() for line in lines]
+    return lines
+
 
 ####################################################################################
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--keywords', default=None)
+    parser.add_argument('--search_words', default=None)
     parser.add_argument('--url', default=None)
     parser.add_argument('--mode', default='url')
     args = parser.parse_args()
@@ -168,11 +198,15 @@ if __name__ == '__main__':
         pass
     time.sleep(1)
 
+    print(args)
     if args.mode == 'url':
-        scrap_from_url(driver,args.url)
+        scrap_from_url(args, driver, args.url)
+    elif args.mode == 'keywords':
+        scrap_from_keywords(args, driver, keywords=args.search_words)
+    elif args.mode == 'hugeworks':
+        scrap_from_company_list(args, driver, fpath='./company.txt')
     else:
-        scrap_from_keywords(driver)
-
+        print('MODE wrongly specified!!!')
 
 
 
