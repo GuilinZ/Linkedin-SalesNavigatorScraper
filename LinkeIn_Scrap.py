@@ -46,8 +46,8 @@ def scrap_from_url(args, driver,url=None, load_page=True):
     count=0
     for link in links:
         count += 1
-        if count > 1:
-            break
+        # if count > 1:
+        #     break
         driver.get(link)
         time.sleep(1)
         person_profile = {}

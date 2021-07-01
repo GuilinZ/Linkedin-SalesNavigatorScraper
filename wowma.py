@@ -10,48 +10,33 @@ import argparse
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 def scrap_from_url(args, driver,url=None, load_page=True):
-    # if url == None:
-    #     url = 'https://www.linkedin.com/sales/search/people?doFetchHeroCard=false&functionIncluded=12&geoIncluded=103644278&industryIncluded=4&logHistory=true&page=1&rsLogId=967882860&searchSessionId=2KtadMyDTh6HsrXXvjHlIQ%3D%3D&seniorityIncluded=6%2C7%2C8'
-    #
-    # if load_page:
-    #     driver.get(url)
-    #     time.sleep(3)
-#################################### INSERT URL ####################################
 
     links = []
     number_page = 1
     number_candidate = 0
-    while number_page < 2:
-        # time.sleep(3)
-        # height = 0
-        # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        # while height < driver.execute_script("return document.body.scrollHeight"):
-        #     driver.execute_script("window.scrollTo(0, {});".format(height))
-        #     height += 20
-        names = driver.find_elements_by_tag_name("a")
-        for name in names:
-            link = name.get_attribute('href')
-            if '/bep/m/prom90?id=656' in link:
-                if link not in links:
-                    links.append(link)
 
-        number_page += 1
-        # next_button = driver.find_element_by_class_name("search-results__pagination-next-button")
-        # next_button.click()
-        # print(links)
-        # print(len(links))
+    names = driver.find_elements_by_tag_name("a")
+    for name in names:
+        link = name.get_attribute('href')
+        if '/bep/m/prom90?id=656' in link:
+            if link not in links:
+                links.append(link)
+
+    number_page += 1
+
 
     extracted_infos = []
-    hiring_keys = ['hiring','hiring!','Hiring','Hiring!','HIRING','open','Open','position']
     count=0
     for link in links:
         count += 1
         print(count)
-        if count > 10:
-            break
+        # if count > 10:
+        #     break
         driver.get(link)
         # time.sleep(1)
         url = driver.current_url
+        if('error') in url:
+            continue
         url_splt = url.split('/')
         user_id = url_splt[url_splt.index('user') + 1]
         template1 = 'https://plus.wowma.jp/bep/m/kmem?user='
@@ -95,37 +80,6 @@ def scrap_from_url(args, driver,url=None, load_page=True):
     # df.to_excel(r'{}/Linkedin_Scrap.xlsx'.format(path), index=False, header=True)
     print('DONE')
     return extracted_infos
-def scrap_from_keywords(args, driver,keywords=None):
-    # filter_page_url = 'https://www.linkedin.com/sales/search/people?page=1&rsLogId=969614316&searchSessionId=1qpyQattToCh2lFvET1Cwg%3D%3D'
-    filter_page_url = 'https://www.linkedin.com/sales/search/people?doFetchHeroCard=false&functionIncluded=12&geoIncluded=103644278&logHistory=true&page=1&rsLogId=994102108&searchSessionId=1qpyQattToCh2lFvET1Cwg%3D%3D&seniorityIncluded=6%2C8%2C7'
-    # print(filter_page_url)
-    driver.get(filter_page_url)
-    time.sleep(3)
-
-    kwd_input = driver.find_element_by_id('ember44-input')
-    kwd_input.send_keys(keywords)
-    kwd_input.send_keys(Keys.ENTER)
-    time.sleep(1)
-    profiles = scrap_from_url(args, driver, url=driver.current_url, load_page=False)
-    return profiles
-def scrap_from_company_list(args, driver, fpath=''):
-    company_list = read_company_list(fpath)
-    rets = []
-    for company in company_list:
-        profiles = scrap_from_keywords(args, driver,keywords=company)
-        rets.extend(profiles)
-    with open('all_company.csv', 'w', encoding='utf8', newline='') as output_file:
-        fc = csv.DictWriter(output_file, fieldnames=rets[0].keys())
-        fc.writeheader()
-        fc.writerows(rets)
-    return rets
-def read_company_list(fpath):
-    with open(fpath) as f:
-        lines = f.readlines()
-    f.close()
-    lines = [line.strip() for line in lines]
-    return lines
-
 
 ####################################################################################
 
@@ -138,35 +92,11 @@ if __name__ == '__main__':
 
     # driver = webdriver.Chrome(ChromeDriverManager(version="91.0.4472.101").install())
     driver = webdriver.Chrome()
+    # driver.set_page_load_timeout(1)
     driver.get('https://wowma.jp/search/shopSearch.html')
+    # driver.execute_script("driver.stop();")
     # driver.maximize_window()
     scrap_from_url(args, driver, args.url, load_page=False)
-
-    # username = driver.find_element_by_id('session_key')
-    # username.send_keys('joycewxyyy@gmail.com')  # Insert your e-mail
-    #
-    # password = driver.find_element_by_id('session_password')
-    # password.send_keys('Internship2021@')  # Insert your password here
-    #
-    # log_in_button = driver.find_element_by_class_name("sign-in-form__submit-button")
-    # log_in_button.click()
-    # time.sleep(1)
-    # try:
-    #     confirm_button = driver.find_element_by_id('remember-me-prompt__form-secondary')
-    #     confirm_button.click()
-    # except:
-    #     pass
-    # time.sleep(1)
-    #
-    # print(args)
-    # if args.mode == 'url':
-    #     scrap_from_url(args, driver, args.url)
-    # elif args.mode == 'keywords':
-    #     scrap_from_keywords(args, driver, keywords=args.search_words)
-    # elif args.mode == 'hugeworks':
-    #     scrap_from_company_list(args, driver, fpath='./company.txt')
-    # else:
-    #     print('MODE wrongly specified!!!')
 
 
 
